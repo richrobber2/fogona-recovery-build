@@ -7,6 +7,7 @@ import sys
 
 root = Path(sys.argv[1])
 expected = {
+    'system/tools/hidl/build/hidl_interface.go': '1cd012ba9e55c17fca85bda47d07dfb717acb9148c0dc6d842713614e4dd04b2',
     'build/make/core/main.mk': '971b6dc659ea8f78212017223d0531e2520e74894d947f028c683277e83a52ce',
     'bootable/recovery/Android.mk': '1d6f16957effa23e9323c2a40dd52ee7c809d571302becea774d1a89044e6f31',
     'bootable/recovery/prebuilt/Android.mk': '0d3545ba282e63099c689f31df41dd44d021bd042b00338fb16a8612a6e64cb5',
@@ -27,6 +28,12 @@ def replace(name, old, new, count=1):
         raise SystemExit(f'Expected {count} occurrences in {name}: {old!r}')
     contents[name] = text.replace(old, new)
     changes.append({'file': name, 'old': old, 'new': new})
+
+# HIDL generates VTS fuzzers even when their test framework is pruned. Do not
+# emit test-only driver/profiler/fuzzer modules for this explicit recovery job.
+replace('system/tools/hidl/build/hidl_interface.go',
+        '\tshouldGenerateVts := shouldGenerateLibrary && proptools.BoolDefault(i.properties.Gen_vts, true)\n',
+        '\tshouldGenerateVts := shouldGenerateLibrary && proptools.BoolDefault(i.properties.Gen_vts, true) && mctx.Config().Getenv("FOGONA_RECOVERY_BUILD") != "true"\n')
 
 mk = 'bootable/recovery/Android.mk'
 # orscmd is the module; twrp is its installed executable stem.

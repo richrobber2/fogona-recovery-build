@@ -49,6 +49,8 @@ jobs:
           cd android
           sha256sum -c ../boot.sha256
       - name: Build recovery only
+        env:
+          FOGONA_RECOVERY_BUILD: "true"
         shell: bash
         run: |
           set -eo pipefail
