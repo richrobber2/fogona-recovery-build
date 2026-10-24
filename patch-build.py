@@ -11,6 +11,8 @@ expected = {
     'bootable/recovery/Android.mk': '1d6f16957effa23e9323c2a40dd52ee7c809d571302becea774d1a89044e6f31',
     'bootable/recovery/prebuilt/Android.mk': '0d3545ba282e63099c689f31df41dd44d021bd042b00338fb16a8612a6e64cb5',
 }
+pruned_files = json.loads((Path(__file__).parent / 'pruned-makefiles.json').read_text())
+expected.update({entry['path']: entry['sha256'] for entry in pruned_files})
 contents = {}
 for name, digest in expected.items():
     data = (root / name).read_bytes()
@@ -85,6 +87,10 @@ compat += '_fogona_unrelated_metadata_edges := ' + ' '.join(unrelated) + '\n'
 compat += '$(foreach edge,$(filter $(_fogona_unrelated_metadata_edges),$(_nonexistent_required)),$(info Excluded non-recovery metadata edge: $(edge)))\n'
 compat += '_nonexistent_required := $(filter-out $(_fogona_unrelated_metadata_edges),$(_nonexistent_required))\n'
 replace('build/make/core/main.mk', 'check_missing_required_modules := true\n', compat + '\ncheck_missing_required_modules := true\n')
+for entry in pruned_files:
+    name = entry['path']
+    contents[name] = '# Recovery-only pruning; original source retained below.\nifneq ($(TARGET_PRODUCT),twrp_fogona)\n' + contents[name] + '\nendif # non-recovery product\n'
+    changes.append({'file': name, 'operation': 'exclude unused Android OS/test makefile for twrp_fogona', 'sha256': entry['sha256']})
 for name, text in contents.items():
     (root / name).write_text(text)
 Path('compatibility-repairs.json').write_text(json.dumps({'changes': changes, 'non_recovery_metadata_edges': unrelated}, indent=2) + '\n')

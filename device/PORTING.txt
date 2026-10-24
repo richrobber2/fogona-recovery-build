@@ -1,7 +1,8 @@
 Fogona rescue recovery — LOCAL UNBUILT DEVICE-TREE DRAFT
 
 Base: d1g0l3b1ck/twrp_motorola_fogona @197d653f7daf334451148aece7add1e0be6d265d.
-Local branch: port/fogona-rescue. No commit, push or release performed.
+Original local branch: port/fogona-rescue (uncommitted here).
+Published build snapshots: richrobber2/fogona-recovery-build (public, user approved).
 
 Corrected from this phone's active-slot images and LP metadata:
 - Dedicated recovery_a/b, header4, ramdisk only; use matching boot kernel.
@@ -15,10 +16,12 @@ Corrected from this phone's active-slot images and LP metadata:
 - Embedded /system/bin/device-rescue.sh. It is invoked explicitly from the
   touch recovery's Advanced/Terminal, never automatically at boot.
 
-Private build prerequisite:
-prebuilt/boot.img is intentionally ignored and excluded from source bundles.
+Build prerequisite:
+prebuilt/boot.img is ignored in the original tree and excluded from source ZIPs.
+The public build repository includes its compressed, verified stock boot input
+with explicit user permission; no userdata or patched init_boot image is included.
 It must exactly match boot_a from ../backups/manifest.json in this workspace.
-Use ../../validate-port.py from this tree's parent workspace (or run it by
+Run python3 ../validate-port.py from the original local tree (or use its
 absolute path). It evaluates BoardConfig using GNU make and checks image
 headers, capacities, encryption flags, payload identity and git diff syntax.
 
@@ -26,8 +29,11 @@ BUILD STATUS: NOT COMPILED.
 The full Android/TWRP source tree and its Linux host prebuilts are not installed.
 This workspace has about11GiB free on an ARM64 Android host. A full recovery build
 needs a suitable Linux build environment and substantially more source/output
-space. No local Android build or CI job was started; a source zip is not a
-bootable image. Keep missing-dependency errors enabled.
+space. GitHub Actions builds now run in the public build repository. Earlier attempts
+failed source/configuration validation before producing an image. A source ZIP
+is not bootable. See the workflow run and local PORT-PROGRESS.txt for current
+results. Missing real recovery dependencies and linker errors remain fatal;
+explicit non-recovery metadata exceptions are recorded in patch-build.py.
 
 UNRESOLVED BOOT/DEVICE VALIDATION:
 - Novatek NVTCapacitiveTouchScreen is the active input device. DRM card0 exists;
