@@ -44,6 +44,9 @@ on early-init
     insmod /lib/modules/rt_pd_manager.ko
 
 on init
+    # Touch firmware exists on verified EROFS /vendor (djn_novatek_ts_fw.bin).
+    # Preserve the platform firmware_class path; use the kernel fallback path.
+    symlink /vendor/firmware /lib/firmware
     mkdir /config
     mount configfs none /config
     mkdir /config/usb_gadget/g1 0770 shell shell

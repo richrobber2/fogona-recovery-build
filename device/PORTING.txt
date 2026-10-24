@@ -32,8 +32,11 @@ bootable image. Keep missing-dependency errors enabled.
 UNRESOLVED BOOT/DEVICE VALIDATION:
 - Novatek NVTCapacitiveTouchScreen is the active input device. DRM card0 exists;
   no legacy fb0 was observed. Actual TWRP rendering/backlight/touch not tested.
-- Matching vendor_boot holds storage/crypto kernel modules. The TWRP module
-  loading list/order still needs validation; no list was invented.
+- Matching vendor_boot holds first-stage/storage/DRM modules. SPI binding on
+  this phone verifies nova_0flash_mmi as its active touch driver; modules.dep
+  identifies dependencies, and /vendor/firmware contains djn Novatek firmware.
+  The EROFS vendor/vendor_dlkm/system_dlkm mounts, loader request and firmware
+  fallback symlink are configured. Actual recovery loading/touch remains untested.
 - Crypto build switches do not prove hardware-backed wrapped-key decryption.
   Without data access, module-disable actions deliberately refuse to proceed.
 - AVB signing/rollback acceptance and Motorola slot/recovery loading must be

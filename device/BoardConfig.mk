@@ -14,6 +14,8 @@ ALLOW_MISSING_DEPENDENCIES := false
 AB_OTA_UPDATER := true
 AB_OTA_PARTITIONS += \
     vendor \
+    vendor_dlkm \
+    system_dlkm \
     odm \
     system \
     product \
@@ -61,11 +63,11 @@ BOARD_RECOVERYIMAGE_PARTITION_SIZE := 104857600
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_SYSTEMIMAGE_PARTITION_TYPE := ext4
 BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := f2fs
-BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
+BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := erofs
 TARGET_COPY_OUT_VENDOR := vendor
 BOARD_SUPER_PARTITION_SIZE := 6710886400 # measured block device
 BOARD_SUPER_PARTITION_GROUPS := mot_dp_group
-BOARD_MOT_DP_GROUP_PARTITION_LIST := system system_ext vendor odm product
+BOARD_MOT_DP_GROUP_PARTITION_LIST := system system_dlkm system_ext vendor vendor_dlkm
 BOARD_MOT_DP_GROUP_SIZE := 6706692096 # measured active-slot group limit
 
 # Platform
@@ -105,8 +107,15 @@ TW_INCLUDE_CRYPTO_FBE := true
 TW_USE_FSCRYPT_POLICY := 2
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
 
-# Matching vendor_boot modules are required. Module-loader selection remains
-# a runtime-validation blocker; do not guess a touchscreen/crypto module list.
+# Matching vendor_boot supplies first-stage/storage/DRM modules.
+# SPI driver binding verifies this Novatek touch module on the running phone.
+TW_LOAD_VENDOR_MODULES := nova_0flash_mmi.ko
+TW_LOAD_VENDOR_BOOT_MODULES := true
 
 # Minimal-manifest NTFS module names are mount.ntfs/fsck.ntfs/mkfs.ntfs.
 TW_INCLUDE_NTFS_3G := true
+
+# Read-only hardware observation: panel0-backlight max_brightness=1637.
+TW_BRIGHTNESS_PATH := /sys/class/backlight/panel0-backlight/brightness
+TW_MAX_BRIGHTNESS := 1637
+TW_DEFAULT_BRIGHTNESS := 256
