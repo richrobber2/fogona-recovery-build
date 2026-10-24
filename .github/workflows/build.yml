@@ -48,9 +48,11 @@ jobs:
         run: |
           set -eo pipefail
           cd android
-          source build/envsetup.sh
-          lunch twrp_fogona-eng
-          m -j2 recoveryimage 2>&1 | tee ../build.log
+          {
+            source build/envsetup.sh
+            lunch twrp_fogona-eng
+            m -j2 recoveryimage
+          } 2>&1 | tee ../build.log
           test -s out/target/product/fogona/recovery.img
           test "$(stat -c%s out/target/product/fogona/recovery.img)" -le 104857600
           sha256sum out/target/product/fogona/recovery.img > ../recovery.sha256

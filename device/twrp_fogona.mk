@@ -27,3 +27,7 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
     PRIVATE_BUILD_DESC="fogona-user 13 U1TFS34.100-35-14-1-21 e7791 release-keys"
 
 BUILD_FINGERPRINT := motorola/fogona/fogona:13/U1TFS34.100-35-14-1-21/e7791:user/release-keys
+
+# Dedicated kernel-free recovery still needs an explicit image target.
+# TARGET_NO_KERNEL otherwise suppresses the build-system default.
+PRODUCT_BUILD_RECOVERY_IMAGE := true
