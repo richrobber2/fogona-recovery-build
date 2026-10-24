@@ -31,8 +31,13 @@ jobs:
           git config --global user.email recovery-build@users.noreply.github.com
           git config --global user.name RecoveryBuild
           repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b 6dc117d9cbd08430daa16db2013560e1c4017fa8 --depth=1
+          mkdir -p .repo/local_manifests
+          cp ../support.xml .repo/local_manifests/support.xml
           repo sync -c -j2 --no-tags --no-clone-bundle --fail-fast 2>&1 | tee ../sync.log
           repo manifest -r -o ../resolved-manifest.xml
+      - name: Apply audited recovery metadata repairs
+        shell: bash
+        run: python3 patch-build.py android
       - name: Stage checked device input
         shell: bash
         run: |
@@ -53,6 +58,8 @@ jobs:
             lunch twrp_fogona-eng
             m -j2 recoveryimage
           } 2>&1 | tee ../build.log
+          cmp ../device/recovery/root/system/bin/device-rescue.sh out/target/product/fogona/recovery/root/system/bin/device-rescue.sh
+          python3 ../verify-ramdisk.py out/target/product/fogona/recovery/root ../ramdisk-audit.json
           test -s out/target/product/fogona/recovery.img
           test "$(stat -c%s out/target/product/fogona/recovery.img)" -le 104857600
           sha256sum out/target/product/fogona/recovery.img > ../recovery.sha256
@@ -67,4 +74,6 @@ jobs:
             build.log
             resolved-manifest.xml
             recovery.sha256
+            compatibility-repairs.json
+            ramdisk-audit.json
             android/out/target/product/fogona/recovery.img

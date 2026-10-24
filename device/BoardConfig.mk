@@ -107,3 +107,6 @@ TW_INCLUDE_FBE_METADATA_DECRYPT := true
 
 # Matching vendor_boot modules are required. Module-loader selection remains
 # a runtime-validation blocker; do not guess a touchscreen/crypto module list.
+
+# Minimal-manifest NTFS module names are mount.ntfs/fsck.ntfs/mkfs.ntfs.
+TW_INCLUDE_NTFS_3G := true

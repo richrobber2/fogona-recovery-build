@@ -34,3 +34,7 @@ PRODUCT_PACKAGES += \
 # Offline rescue, invoked explicitly from the recovery terminal; never auto-runs.
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/recovery/root/system/bin/device-rescue.sh:recovery/root/system/bin/device-rescue.sh
+
+# The branch defines normal task_profiles.json, not task_recovery_profiles.json.
+PRODUCT_COPY_FILES += \
+    system/core/libprocessgroup/profiles/task_profiles.json:recovery/root/system/etc/task_profiles.json

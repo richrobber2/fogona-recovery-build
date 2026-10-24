@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Utility dependencies excluded from upstream minimal manifest. -->
+  <project name="platform/external/newfs_msdos" path="external/newfs_msdos" remote="aosp" revision="refs/tags/android-12.1.0_r4" />
+  <project name="platform/external/tcpdump" path="external/tcpdump" remote="aosp" revision="refs/tags/android-12.1.0_r4" />
+  <project name="platform/external/libpcap" path="external/libpcap" remote="aosp" revision="refs/tags/android-12.1.0_r4" />
+</manifest>
