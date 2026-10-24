@@ -1,0 +1,46 @@
+Fogona rescue recovery — LOCAL UNBUILT DEVICE-TREE DRAFT
+
+Base: d1g0l3b1ck/twrp_motorola_fogona @197d653f7daf334451148aece7add1e0be6d265d.
+Local branch: port/fogona-rescue. No commit, push or release performed.
+
+Corrected from this phone's active-slot images and LP metadata:
+- Dedicated recovery_a/b, header4, ramdisk only; use matching boot kernel.
+- Recovery100MiB, boot/vendor_boot96MiB, init_boot8MiB.
+- Super6710886400 bytes, mot_dp_group active maximum6706692096 bytes.
+- f2fs userdata with fscrypt v2, inlinecrypt_optimized, wrappedkey_v0,
+  metadata encryption and /metadata/vold/metadata_encryption key directory.
+- Slot-aware raw image paths; no stale unsuffixed /boot assumptions.
+- Vendor level2026-08-01, no2099 future-date or AVB disable flags.
+- No empty kernel input; verified private prebuilt/boot.img is used instead.
+- Embedded /system/bin/device-rescue.sh. It is invoked explicitly from the
+  touch recovery's Advanced/Terminal, never automatically at boot.
+
+Private build prerequisite:
+prebuilt/boot.img is intentionally ignored and excluded from source bundles.
+It must exactly match boot_a from ../backups/manifest.json in this workspace.
+Use ../../validate-port.py from this tree's parent workspace (or run it by
+absolute path). It evaluates BoardConfig using GNU make and checks image
+headers, capacities, encryption flags, payload identity and git diff syntax.
+
+BUILD STATUS: NOT COMPILED.
+The full Android/TWRP source tree and its Linux host prebuilts are not installed.
+This workspace has about11GiB free on an ARM64 Android host. A full recovery build
+needs a suitable Linux build environment and substantially more source/output
+space. No local Android build or CI job was started; a source zip is not a
+bootable image. Keep missing-dependency errors enabled.
+
+UNRESOLVED BOOT/DEVICE VALIDATION:
+- Novatek NVTCapacitiveTouchScreen is the active input device. DRM card0 exists;
+  no legacy fb0 was observed. Actual TWRP rendering/backlight/touch not tested.
+- Matching vendor_boot holds storage/crypto kernel modules. The TWRP module
+  loading list/order still needs validation; no list was invented.
+- Crypto build switches do not prove hardware-backed wrapped-key decryption.
+  Without data access, module-disable actions deliberately refuse to proceed.
+- AVB signing/rollback acceptance and Motorola slot/recovery loading must be
+  established before producing any deployable image.
+- Phone-only rollback remains unresolved. Do not change slot or flash either
+  recovery while the phone is the sole working control device.
+
+Prior normal-boot stalls remain unexplained. All existing device modules remain
+disabled; this draft does not activate them, change SELinux, format, mount data,
+change boot control, flash partitions or alter Android's running UI.
