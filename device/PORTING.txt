@@ -32,8 +32,10 @@ needs a suitable Linux build environment and substantially more source/output
 space. GitHub Actions builds now run in the public build repository. Earlier attempts
 failed source/configuration validation before producing an image. A source ZIP
 is not bootable. See the workflow run and local PORT-PROGRESS.txt for current
-results. Missing real recovery dependencies and linker errors remain fatal;
-explicit non-recovery metadata exceptions are recorded in patch-build.py.
+results. Apply patch-build.py before compiling: it adds a recursive recovery REQUIRED
+closure check. Upstream deferred handling permits unused, omitted test packages;
+missing dependencies reachable from recoveryimage and its linker remain fatal.
+The staged ramdisk audit is an additional mandatory gate.
 
 UNRESOLVED BOOT/DEVICE VALIDATION:
 - Novatek NVTCapacitiveTouchScreen is the active input device. DRM card0 exists;

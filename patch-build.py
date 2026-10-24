@@ -12,8 +12,6 @@ expected = {
     'bootable/recovery/Android.mk': '1d6f16957effa23e9323c2a40dd52ee7c809d571302becea774d1a89044e6f31',
     'bootable/recovery/prebuilt/Android.mk': '0d3545ba282e63099c689f31df41dd44d021bd042b00338fb16a8612a6e64cb5',
 }
-pruned_files = json.loads((Path(__file__).parent / 'pruned-makefiles.json').read_text())
-expected.update({entry['path']: entry['sha256'] for entry in pruned_files})
 contents = {}
 for name, digest in expected.items():
     data = (root / name).read_bytes()
@@ -60,45 +58,63 @@ replace(pre, 'LOCAL_REQUIRED_MODULES += $(TARGET_BINARY_RELINK_FILES)', '''TARGE
 TARGET_BINARY_RELINK_MODULES += orscmd init_second_stage.recovery ziptool.recovery
 LOCAL_REQUIRED_MODULES += $(TARGET_BINARY_RELINK_MODULES)''')
 
-# AOSP's global metadata scan checks every parsed module, including pruned CTS,
-# framework and host-test packages outside the recovery image. Exempt ONLY the
-# exact unrelated edges observed in run40079784663. Every new missing edge still
-# errors; ALLOW_MISSING_DEPENDENCIES remains false; linking remains strict.
-unrelated = '''HOST,brillo_update_payload,HOST,shflags
-HOST,domainGeneratorPolicy.py,HOST,domainGeneratorConnector
-HOST,linkerconfig,HOST,vndkcorevariant.libraries.txt
-HOST,vts-tradefed,HOST,compatibility-host-util
-TARGET,FrameworksCoreTests,TARGET,com.android.cts.helpers.aosp
-TARGET,PermissionControllerInProcessTests,TARGET,CtsAppThatRequestsLocationPermission29
-TARGET,PrintSpoolerOutOfProcessTests,TARGET,com.android.cts.helpers.aosp
-TARGET,android.hardware.security.keymint-service,TARGET,RemoteProvisioner
-TARGET,android.hardware.security.keymint-service.trusty,TARGET,RemoteProvisioner
-TARGET,com.android.runtime,TARGET,vndkcorevariant.libraries.txt
-TARGET,com.android.runtime.apex,TARGET,vndkcorevariant.libraries.txt
-TARGET,com.android.tethering,TARGET,NetworkPermissionConfig
-TARGET,com.android.tethering.apex,TARGET,NetworkPermissionConfig
-TARGET,dumpstate,TARGET,ip
-TARGET,dumpstate,TARGET,iptables
-TARGET,dumpstate,TARGET,ss
-TARGET,framework-minus-apex,TARGET,calendar-provider-compat-config
-TARGET,framework-minus-apex,TARGET,documents-ui-compat-config
-TARGET,framework-minus-apex-intdefs,TARGET,calendar-provider-compat-config
-TARGET,framework-minus-apex-intdefs,TARGET,documents-ui-compat-config
-TARGET,gpuservice,TARGET,bpfloader
-TARGET,librs_jni,TARGET,libRS
-TARGET,librs_jni_32,TARGET,libRS
-TARGET,linkerconfig,TARGET,vndkcorevariant.libraries.txt
-TARGET,netd,TARGET,bpfloader'''.splitlines()
-compat = '\n# Pinned fogona recovery-only metadata exceptions; see patch-build.py.\n'
-compat += '_fogona_unrelated_metadata_edges := ' + ' '.join(unrelated) + '\n'
-compat += '$(foreach edge,$(filter $(_fogona_unrelated_metadata_edges),$(_nonexistent_required)),$(info Excluded non-recovery metadata edge: $(edge)))\n'
-compat += '_nonexistent_required := $(filter-out $(_fogona_unrelated_metadata_edges),$(_nonexistent_required))\n'
+# The minimal manifest deliberately omits unrelated OS/test packages. Use
+# upstream deferred missing-dependency handling, then enforce REQUIRED closure
+# for every recovery-installed module and the recovery/relink/ramdisk roots.
+# Missing linked dependencies reachable by Ninja still produce error rules.
+compat = r"""
+# Fogona's recovery-only REQUIRED closure; never suppress missing image tools.
+ifeq ($(TARGET_PRODUCT),twrp_fogona)
+_fogona_reachable :=
+define fogona-expand-required
+$(eval _fogona_new := $(filter-out $(_fogona_reachable),$(1)))
+$(if $(_fogona_new), \
+  $(eval _fogona_reachable += $(_fogona_new)) \
+  $(call fogona-expand-required,$(sort $(foreach m,$(_fogona_new), \
+    $(ALL_MODULES.$(m).REQUIRED_FROM_TARGET) \
+    $(ALL_MODULES.$(m).REQUIRED_FROM_HOST) \
+    $(ALL_MODULES.$(m).HOST_REQUIRED_FROM_TARGET) \
+    $(ALL_MODULES.$(m).TARGET_REQUIRED_FROM_HOST)))))
+endef
+_fogona_roots := recovery twrp_ramdisk relink_libraries relink_binaries relink_vendor_hw_binaries
+_fogona_roots += $(foreach m,$(ALL_MODULES),$(if $(filter $(TARGET_RECOVERY_ROOT_OUT)/%,$(ALL_MODULES.$(m).INSTALLED)),$(m)))
+ifneq ($(strip $(filter-out $(ALL_MODULES),$(_fogona_roots))),)
+$(error Missing recovery root modules: $(filter-out $(ALL_MODULES),$(_fogona_roots)))
+endif
+$(call fogona-expand-required,$(_fogona_roots))
+_fogona_missing := $(foreach edge,$(_nonexistent_required),$(if $(filter $(word 2,$(subst $(comma),$(space),$(edge))),$(_fogona_reachable)),$(edge)))
+$(info FOGONA_REQUIRED_MODULE_AUDIT: reachable=$(words $(_fogona_reachable)) missing=$(words $(_fogona_missing)))
+$(info FOGONA_REQUIRED_MODULES: $(sort $(_fogona_reachable)))
+ifneq ($(strip $(_fogona_missing)),)
+$(foreach edge,$(_fogona_missing),$(info Missing recovery REQUIRED edge: $(edge)))
+$(error Missing required recovery modules)
+endif
+endif
+"""
 replace('build/make/core/main.mk', 'check_missing_required_modules := true\n', compat + '\ncheck_missing_required_modules := true\n')
-for entry in pruned_files:
-    name = entry['path']
-    contents[name] = '# Recovery-only pruning; original source retained below.\nifneq ($(TARGET_PRODUCT),twrp_fogona)\n' + contents[name] + '\nendif # non-recovery product\n'
-    changes.append({'file': name, 'operation': 'exclude unused Android OS/test makefile for twrp_fogona', 'sha256': entry['sha256']})
+# Keep Make native-link dependency validation strict over the same image scope,
+# including transitive static/shared libraries and required host tools.
+compat_links = r"""
+_fogona_link_reachable :=
+define fogona-expand-links
+$(eval _fogona_new_links := $(filter-out $(_fogona_link_reachable),$(1)))
+$(if $(_fogona_new_links), \
+  $(eval _fogona_link_reachable += $(_fogona_new_links)) \
+  $(call fogona-expand-links,$(sort $(foreach lt,$(_fogona_new_links),$($(lt).DEPS)))))
+endef
+_fogona_link_roots := $(foreach lt,$(ALL_LINK_TYPES),$(if $(filter $(call link-type-name,$(lt)),$(_fogona_reachable)),$(lt)))
+$(call fogona-expand-links,$(_fogona_link_roots))
+$(info FOGONA_LINK_MODULE_AUDIT: reachable=$(words $(_fogona_link_reachable)))
+"""
+compat_missing = r"""  define link-type-missing
+    $(if $(filter $(1),$(_fogona_link_reachable)), \
+      $(shell $(call echo-error,$($(1).MAKEFILE),"Recovery dependency $(call link-type-name,$(1)) missing $(call link-type-name,$(2))")) \
+      $(eval link_type_error := true), \
+      $(eval $$(1).MISSING := true))
+  endef"""
+replace('build/make/core/main.mk', '  define link-type-missing\n    $(eval $$(1).MISSING := true)\n  endef', compat_missing)
+replace('build/make/core/main.mk', '$(foreach lt,$(ALL_LINK_TYPES),\\\n', compat_links + '\n$(foreach lt,$(ALL_LINK_TYPES),\\\n')
 for name, text in contents.items():
     (root / name).write_text(text)
-Path('compatibility-repairs.json').write_text(json.dumps({'changes': changes, 'non_recovery_metadata_edges': unrelated}, indent=2) + '\n')
-print(f'Applied {len(changes)} pinned source repairs; {len(unrelated)} explicit non-recovery metadata edges logged.')
+Path('compatibility-repairs.json').write_text(json.dumps({'changes': changes, 'validation_scope': 'Recursive REQUIRED closure from recovery-installed modules and explicit ramdisk/relink roots; Ninja errors for missing reachable linked modules; staged ELF/content audit.'}, indent=2) + '\n')
+print(f'Applied {len(changes)} pinned source repairs; recovery-scoped required-module validation enabled.')

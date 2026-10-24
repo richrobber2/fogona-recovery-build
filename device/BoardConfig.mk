@@ -7,8 +7,10 @@
 
 DEVICE_PATH := device/motorola/fogona
 
-# Do not hide missing recovery/crypto dependencies.
-ALLOW_MISSING_DEPENDENCIES := false
+# The minimal manifest omits unused Android OS/test packages.
+# patch-build.py enforces recovery REQUIRED closure; Ninja remains fail-closed
+# for missing linked dependencies reachable from recoveryimage.
+ALLOW_MISSING_DEPENDENCIES := true
 
 # A/B
 AB_OTA_UPDATER := true
