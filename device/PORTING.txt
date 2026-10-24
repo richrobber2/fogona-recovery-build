@@ -25,7 +25,11 @@ Run python3 ../validate-port.py from the original local tree (or use its
 absolute path). It evaluates BoardConfig using GNU make and checks image
 headers, capacities, encryption flags, payload identity and git diff syntax.
 
-BUILD STATUS: NOT COMPILED.
+BUILD STATUS: snapshot9b1f6c9 compiled successfully in run40117889227.
+The resulting100MiB image has the expected v4/kernel-free header and passes its
+AVB payload hash check. Its post-build audit found two missing runtime libraries
+(libsysutils.so and libresetprop.so), so that image must not be used for a trial.
+The current source adds both to the relink hook; rebuild40122398671 is pending.
 The full Android/TWRP source tree and its Linux host prebuilts are not installed.
 This workspace has about11GiB free on an ARM64 Android host. A full recovery build
 needs a suitable Linux build environment and substantially more source/output
