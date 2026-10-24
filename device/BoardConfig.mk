@@ -121,3 +121,8 @@ TW_INCLUDE_NTFS_3G := true
 TW_BRIGHTNESS_PATH := /sys/class/backlight/panel0-backlight/brightness
 TW_MAX_BRIGHTNESS := 1637
 TW_DEFAULT_BRIGHTNESS := 256
+
+# ELF audit of the compiled recovery requires these in the ramdisk too.
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libsysutils.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libresetprop.so

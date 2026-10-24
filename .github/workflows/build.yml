@@ -72,6 +72,7 @@ jobs:
             lunch twrp_fogona-eng
             m -j2 recoveryimage
           } 2>&1 | tee ../build.log
+          tar -czf ../recovery-staging.tar.gz -C out/target/product/fogona recovery/root system/lib64
           cmp ../device/recovery/root/system/bin/device-rescue.sh out/target/product/fogona/recovery/root/system/bin/device-rescue.sh
           python3 ../verify-ramdisk.py out/target/product/fogona/recovery/root ../ramdisk-audit.json
           test -s out/target/product/fogona/recovery.img
@@ -90,4 +91,5 @@ jobs:
             recovery.sha256
             compatibility-repairs.json
             ramdisk-audit.json
+            recovery-staging.tar.gz
             android/out/target/product/fogona/recovery.img
