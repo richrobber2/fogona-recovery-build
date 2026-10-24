@@ -1,4 +1,6 @@
 import ast
+import os
+import tempfile
 from pathlib import Path
 import subprocess
 import unittest
@@ -33,7 +35,10 @@ endif
 all:
 	@:
 '''
-        return subprocess.run(['make','--no-print-directory','-s','-f','-'],input=source,text=True,capture_output=True,timeout=10)
+        with tempfile.TemporaryDirectory() as directory:
+            makefile=Path(directory)/'fixture.mk'
+            makefile.write_text(source)
+            return subprocess.run([os.environ.get('RECOVERY_MAKE','make'),'-s','-f',str(makefile)],text=True,capture_output=True,timeout=10)
 
     def test_valid_graph(self):
         p=self.check_graph(parent_deps=C);self.assertEqual(p.returncode,0,p.stderr)

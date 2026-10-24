@@ -1,5 +1,7 @@
 """Exercise the exact Make closure emitted by patch-build.py, including failures."""
 import ast
+import os
+import tempfile
 from pathlib import Path
 import subprocess
 import unittest
@@ -20,7 +22,10 @@ ALL_MODULES := '''+ROOTS+' core crypto outsider custom hosttool '+extra_modules+
 ALL_MODULES.recovery.REQUIRED_FROM_TARGET := core
 ALL_MODULES.core.REQUIRED_FROM_TARGET := crypto
 '''+fields+'\n_nonexistent_required := '+missing+'\n'+COMPAT+'\nall:\n\t@:\n'
-        return subprocess.run(['make','--no-print-directory','-s','-f','-'],input=source,text=True,capture_output=True,timeout=10)
+        with tempfile.TemporaryDirectory() as directory:
+            makefile=Path(directory)/'fixture.mk'
+            makefile.write_text(source)
+            return subprocess.run([os.environ.get('RECOVERY_MAKE','make'),'-s','-f',str(makefile)],text=True,capture_output=True,timeout=10)
 
     def test_valid_closure(self):
         p=self.run_make();self.assertEqual(p.returncode,0,p.stderr);self.assertIn('missing=0',p.stdout)

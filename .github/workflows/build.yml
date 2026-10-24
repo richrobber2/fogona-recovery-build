@@ -40,6 +40,13 @@ jobs:
           cp ../support.xml .repo/local_manifests/support.xml
           repo sync -c -j2 --no-tags --no-clone-bundle --fail-fast 2>&1 | tee ../sync.log
           repo manifest -r -o ../resolved-manifest.xml
+      - name: Test validators with Android Kati
+        env:
+          RECOVERY_MAKE: ${{ github.workspace }}/android/prebuilts/build-tools/linux-x86/bin/ckati
+        shell: bash
+        run: |
+          python3 tests/test_required_scope.py
+          python3 tests/test_link_scope.py
       - name: Apply audited recovery metadata repairs
         shell: bash
         run: python3 patch-build.py android

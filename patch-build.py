@@ -81,7 +81,10 @@ _fogona_roots += $(foreach m,$(ALL_MODULES),$(if $(filter $(TARGET_RECOVERY_ROOT
 ifneq ($(strip $(filter-out $(ALL_MODULES),$(_fogona_roots))),)
 $(error Missing recovery root modules: $(filter-out $(ALL_MODULES),$(_fogona_roots)))
 endif
-$(call fogona-expand-required,$(_fogona_roots))
+_fogona_required_walk_output := $(strip $(call fogona-expand-required,$(_fogona_roots)))
+ifneq ($(_fogona_required_walk_output),)
+$(error Unexpected recovery REQUIRED traversal output: $(_fogona_required_walk_output))
+endif
 _fogona_missing := $(foreach edge,$(_nonexistent_required),$(if $(filter $(word 2,$(subst $(comma),$(space),$(edge))),$(_fogona_reachable)),$(edge)))
 $(info FOGONA_REQUIRED_MODULE_AUDIT: reachable=$(words $(_fogona_reachable)) missing=$(words $(_fogona_missing)))
 $(info FOGONA_REQUIRED_MODULES: $(sort $(_fogona_reachable)))
@@ -103,7 +106,10 @@ $(if $(_fogona_new_links), \
   $(call fogona-expand-links,$(sort $(foreach lt,$(_fogona_new_links),$($(lt).DEPS)))))
 endef
 _fogona_link_roots := $(foreach lt,$(ALL_LINK_TYPES),$(if $(filter $(call link-type-name,$(lt)),$(_fogona_reachable)),$(lt)))
-$(call fogona-expand-links,$(_fogona_link_roots))
+_fogona_link_walk_output := $(strip $(call fogona-expand-links,$(_fogona_link_roots)))
+ifneq ($(_fogona_link_walk_output),)
+$(error Unexpected recovery link traversal output: $(_fogona_link_walk_output))
+endif
 $(info FOGONA_LINK_MODULE_AUDIT: reachable=$(words $(_fogona_link_reachable)))
 """
 compat_missing = r"""  define link-type-missing
