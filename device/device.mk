@@ -6,6 +6,8 @@
 #
 
 LOCAL_PATH := device/motorola/fogona
+# Export this namespace so Make/Ninja can invoke the host-only parser test.
+PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
 # A/B
 AB_OTA_POSTINSTALL_CONFIG += \
     RUN_POSTINSTALL_system=true \
