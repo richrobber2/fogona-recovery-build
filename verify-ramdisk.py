@@ -47,7 +47,8 @@ if len(sys.argv) > 3:
     if sys.argv[3:] != ['--require-logging']:
         raise SystemExit('Unknown audit options')
     required += ['system/bin/logd', 'system/bin/logcat',
-                 'system/bin/recovery-logsave.sh', 'init.recovery.logd.rc']
+                 'system/bin/recovery-logsave.sh', 'init.recovery.logd.rc',
+                 'system/etc/event-log-tags']
     critical_elf_paths.update({'system/bin/logd', 'system/bin/logcat'})
 for name in required:
     path = rooted(name)

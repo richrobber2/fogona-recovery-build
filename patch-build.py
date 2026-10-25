@@ -81,6 +81,10 @@ for module in ['libbinderthreadstate', 'libminadbd', 'libcryptfsfde', 'libtwrpfs
 # Older TWRP relink lists reference removed or unused logging libraries.
 for module in ['libnl', 'libpcrecpp', 'liblogcat']:
     replace(pre, 'RECOVERY_LIBRARY_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/' + module + '.so\n', '')
+# event-log-tags is a generated Make target, not an ALL_MODULES entry.
+# The device's real ETC module packages its output and owns the dependency.
+replace(mk, '    TWRP_REQUIRED_MODULES += logcat event-log-tags',
+        '    TWRP_REQUIRED_MODULES += logcat fogona-event-log-tags')
 replace(mk, '        TWRP_REQUIRED_MODULES += logd libsysutils libnl init.recovery.logd.rc',
         '        TWRP_REQUIRED_MODULES += logd libsysutils init.recovery.logd.rc')
 replace(pre, '    plat_hardware_contexts \\\n', '')  # typo; real hwservice contexts remain

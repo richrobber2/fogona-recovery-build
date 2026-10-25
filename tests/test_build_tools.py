@@ -58,6 +58,7 @@ class RamdiskAuditTests(unittest.TestCase):
         script=self.root/'system/bin/recovery-logsave.sh'
         script.write_text('#!/system/bin/sh\n'); script.chmod(0o755)
         (self.root/'init.recovery.logd.rc').write_text('on init\n    start logd\n')
+        (self.root/'system/etc/event-log-tags').write_text('1 fixture_tag\n')
         p=self.audit(logging=True)
         self.assertEqual(p.returncode,0,p.stderr)
 
