@@ -25,3 +25,11 @@ cc_binary {
     shared_libs: ["libdl"],
     cflags: ["-Wall", "-Wextra", "-Werror"],
 }
+
+cc_binary {
+    name: "fogona-resetprop",
+    recovery: true,
+    srcs: ["crypto/resetprop-cli.cpp"],
+    shared_libs: ["libresetprop"],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+}

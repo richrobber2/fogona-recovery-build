@@ -77,3 +77,28 @@ requires an ARM64 probe, Binder library and the gated keystore configuration.
 Log snapshots prioritize main/system/crash buffers and retain startup output.
 Full Android compilation, private packaging and hardware decryption remain
 required before this revision can be called working.
+
+OS configuration alignment
+
+The vendor KeyMint library reads ro.build.version.release and the system patch
+date. Recovery's independent Android 12/August defaults differ from the installed
+Android 14/June system. Before starting HALs, the one-shot policy reads the active
+system's build.prop through a separately verified read-only ext4 mount with
+noload (no journal replay), validates the two values, unmounts its own temporary
+mount, and applies exactly those installed values to recovery's in-memory
+properties. It does not copy an SDK level, guess future dates or change disk
+properties. Failure leaves HALs/keystore stopped. A restricted CLI front end
+uses the pinned libresetprop already packaged for recovery and accepts only the
+two named properties with the no-property-service option.
+
+Sixteen shell cases include read-only mount verification, cleanup, malformed
+values, no shell evaluation, and refusing service startup on alignment failure.
+A device-local native test used copied private property files in a chroot,
+verified an update through the restricted helper, and restored the snapshot.
+Normal Android properties and security services were not modified.
+
+The currently running compile (40159637392, source755a12b) predates this
+ramdisk-only change. Local packaging will record the later script source commit
+and locally compiled helper separately, verify its linked libresetprop hash,
+and rerun the updated staged audit. No new full build is needed solely for
+these overlaid files; future builds include the module directly.

@@ -65,6 +65,8 @@ class RamdiskAuditTests(unittest.TestCase):
     def stage_crypto(self):
         library=self.root/'system/lib64/libbinder_ndk.so'; library.parent.mkdir(parents=True,exist_ok=True)
         shutil.copy2(self.build/'fixture',library)
+        shutil.copy2(self.build/'fixture',self.root/'system/lib64/libresetprop.so')
+        shutil.copy2(self.build/'fixture',self.root/'system/bin/fogona-resetprop')
         shutil.copy2(self.build/'fixture',self.root/'system/bin/fogona-check-keymint')
         helper=self.root/'system/bin/fogona-crypto-start.sh'
         helper.write_text('#!/system/bin/sh\n'); helper.chmod(0o755)

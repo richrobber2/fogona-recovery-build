@@ -52,9 +52,9 @@ if '--require-logging' in options:
                  'system/etc/event-log-tags']
     critical_elf_paths.update({'system/bin/logd', 'system/bin/logcat'})
 if '--require-crypto-startup' in options:
-    required += ['system/lib64/libbinder_ndk.so', 'system/bin/fogona-check-keymint', 'system/bin/fogona-crypto-start.sh',
+    required += ['system/lib64/libbinder_ndk.so', 'system/lib64/libresetprop.so', 'system/bin/fogona-resetprop', 'system/bin/fogona-check-keymint', 'system/bin/fogona-crypto-start.sh',
                  'init.recovery.fogona-crypto.rc', 'system/etc/ld.config.fogona-crypto.txt']
-    critical_elf_paths.add('system/bin/fogona-check-keymint')
+    critical_elf_paths.update({'system/bin/fogona-check-keymint', 'system/bin/fogona-resetprop'})
     for name, marker in [('init.recovery.qcom.rc', 'import /init.recovery.fogona-crypto.rc'),
                          ('system/etc/init/keystore2.rc', 'on property:fogona.crypto.keymint.ready=1')]:
         path = rooted(name)

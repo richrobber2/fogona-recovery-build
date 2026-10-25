@@ -47,7 +47,7 @@ PRODUCT_COPY_FILES += \
 
 # Recovery-only registration probe and startup policy. Matching proprietary
 # VNDK files are overlaid privately on-device, never published by this build.
-PRODUCT_PACKAGES += fogona-check-keymint
+PRODUCT_PACKAGES += fogona-check-keymint fogona-resetprop
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/recovery/root/init.recovery.fogona-crypto.rc:recovery/root/init.recovery.fogona-crypto.rc \
     $(LOCAL_PATH)/recovery/root/system/etc/ld.config.fogona-crypto.txt:recovery/root/system/etc/ld.config.fogona-crypto.txt \
