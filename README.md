@@ -17,24 +17,32 @@ The phone-only fallback tool tools/restore-stock-recovery.sh defaults to a read-
 
 Current crypto-startup investigation
 
-A stock-packaged local image has booted with working touch and persistent
-metadata logs. A later storage correction mounted vendor successfully but
-stalled entering metadata decryption; the device was restored to that tested
-image. The cause has not yet been proven from service logs.
+The current locally stock-packaged image boots with working touch, mounts
+vendor read-only and saves logs in metadata. Userdata decryption still fails.
+A private isolated probe reproduced an exact mismatch: vendor manifest schema
+5.0 is rejected by Android 12.1 libvintf (schema 4.0), after which keystore2's
+VINTF wrapper dereferences the null manifest. Full Binder/HAL behavior has not
+been reproduced by that focused probe.
 
-This branch adds a five-second service-registration polling deadline in vold's
-Keymaster constructor. It does not bound later Binder transactions or guarantee
-hardware-backed decryption. Keystore2 is explicitly started by the recovery
-init configuration; missing registration now returns an unavailable wrapper
-instead of waiting indefinitely. Ready services still follow the original
-crypto path. No format, key-generation or key-deletion fallback is added.
+support.xml now pins the complete Android 13 libvintf source project at
+96bcbaf82bde249b6f5ea1dc654abfebdca9b86b. Its parser supports schema 5.0;
+consumers are rebuilt from source. This is a scoped library source upgrade,
+not an Android 13 migration of the entire recovery. No vendor XML versions
+are edited. patch-build.py adds null guards to the four pinned keystore2 FFI
+entrypoints, returning allocated empty results without inventing HAL instances.
 
-Logd/logcat are built from matching sources and required by the staged audit.
-The metadata snapshot helper records mounts, init properties and processes,
-retains early kernel output, and replaces stale status on partial failure.
-The header uses injected clock/check functions for focused native tests; full
-Android compilation and device runtime verification are still required.
+The host-only fogona-vintf-parser-test exercises schema 4/5, KeyMint v2
+compatibility with v1/v2 clients, and rejection of v3/malformed/future input.
+tests/test_vintf_wrapper.py compiles the actual patched wrapper against
+controlled null/available manifests and checks all four FFI paths and cleanup.
+These tests do not prove Android ABI, hardware HAL startup or decryption.
+
+The existing five-second vold deadline bounds service-registration polling
+only; later Binder transactions remain unbounded. No format, key-generation
+or key-deletion fallback is added. Logd/logcat and metadata diagnostics remain.
 
 CI artifacts remain experimental. Stock packaging and the device-local matching
 touch firmware/module overlay are required before any physical trial; those
-private device inputs are not included in this public repository.
+private device inputs are not included in this public repository. Physical
+bootloader START fallback has been tested; stock restoration from Android has
+only been checked read-only. No flashing is performed by the workflow.

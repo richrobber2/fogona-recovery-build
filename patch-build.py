@@ -7,6 +7,7 @@ import sys
 
 root = Path(sys.argv[1])
 expected = {
+    'system/security/keystore2/src/vintf/vintf.cpp': '0a309133335bce63a0e5fbd0f240ae700e530efb24aac60bc763efde756c9520',
     'system/vold/Keymaster.cpp': '0dd4d451a3ba35daf73beb59605b49afb9d78beb4fdd5c046d531aee3adbf3c7',
     'system/tools/hidl/build/hidl_interface.go': '1cd012ba9e55c17fca85bda47d07dfb717acb9148c0dc6d842713614e4dd04b2',
     'build/make/core/main.mk': '971b6dc659ea8f78212017223d0531e2520e74894d947f028c683277e83a52ce',
@@ -27,6 +28,17 @@ def replace(name, old, new, count=1):
         raise SystemExit(f'Expected {count} occurrences in {name}: {old!r}')
     contents[name] = text.replace(old, new)
     changes.append({'file': name, 'old': old, 'new': new})
+
+# libvintf returns a null manifest on missing or rejected vendor XML. Keep the
+# FFI result allocated even when empty: Rust's slice contract requires a nonnull
+# aligned pointer for zero-length slices too. Do not fabricate HAL instances.
+replace('system/security/keystore2/src/vintf/vintf.cpp',
+        '    auto manifest = android::vintf::VintfObject::GetDeviceHalManifest();\n',
+        '    auto manifest = android::vintf::VintfObject::GetDeviceHalManifest();\n'
+        '    if (!manifest) {\n'
+        '        *len = 0;\n'
+        '        return convert({});\n'
+        '    }\n', 4)
 
 # Recovery has an explicitly started keystore2. Do not let an absent/crashed
 # service leave startup waiting forever. This does not bound later Binder calls.

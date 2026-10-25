@@ -7,3 +7,11 @@
 
 soong_namespace {
 }
+
+// Host-only source integration check, excluded from the recovery image.
+cc_binary_host {
+    name: "fogona-vintf-parser-test",
+    srcs: ["tests/vintf_parser_test.cpp"],
+    shared_libs: ["libvintf"],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+}

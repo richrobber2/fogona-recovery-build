@@ -51,7 +51,9 @@ jobs:
           python3 tests/test_link_scope.py
       - name: Apply audited recovery metadata repairs
         shell: bash
-        run: python3 patch-build.py android
+        run: |
+          python3 patch-build.py android
+          CXX=g++ python3 tests/test_vintf_wrapper.py android
       - name: Stage checked device input
         shell: bash
         run: |
@@ -72,6 +74,8 @@ jobs:
           {
             source build/envsetup.sh
             lunch twrp_fogona-eng
+            m -j2 fogona-vintf-parser-test
+            LD_LIBRARY_PATH="$PWD/out/host/linux-x86/lib64" out/host/linux-x86/bin/fogona-vintf-parser-test
             m -j2 recoveryimage
           } 2>&1 | tee ../build.log
           tar -czf ../recovery-staging.tar.gz -C out/target/product/fogona recovery/root system/lib64

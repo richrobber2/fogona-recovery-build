@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
+  <!-- Android 13 libvintf implements manifest schema 5.0 used by this vendor.
+       Rebuild consumers from source; do not replace XML version attributes. -->
+  <remove-project name="platform/system/libvintf" />
+  <project name="platform/system/libvintf" path="system/libvintf" remote="aosp" revision="96bcbaf82bde249b6f5ea1dc654abfebdca9b86b" />
   <!-- Utility dependencies excluded from upstream minimal manifest. -->
   <project name="platform/external/newfs_msdos" path="external/newfs_msdos" remote="aosp" revision="refs/tags/android-12.1.0_r4" />
   <project name="platform/external/tcpdump" path="external/tcpdump" remote="aosp" revision="refs/tags/android-12.1.0_r4" />
