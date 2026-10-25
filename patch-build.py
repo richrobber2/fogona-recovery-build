@@ -7,6 +7,7 @@ import sys
 
 root = Path(sys.argv[1])
 expected = {
+    'system/libvintf/test/Android.bp': '35f754eacadcca3f29fe05d40986f252ed1c1babc40dc70da73dd1192ad27517',
     'system/security/keystore2/src/vintf/vintf.cpp': '0a309133335bce63a0e5fbd0f240ae700e530efb24aac60bc763efde756c9520',
     'system/vold/Keymaster.cpp': '0dd4d451a3ba35daf73beb59605b49afb9d78beb4fdd5c046d531aee3adbf3c7',
     'system/tools/hidl/build/hidl_interface.go': '1cd012ba9e55c17fca85bda47d07dfb717acb9148c0dc6d842713614e4dd04b2',
@@ -28,6 +29,13 @@ def replace(name, old, new, count=1):
         raise SystemExit(f'Expected {count} occurrences in {name}: {old!r}')
     contents[name] = text.replace(old, new)
     changes.append({'file': name, 'old': old, 'new': new})
+
+# Android 12 Soong predates this Android 13 clang-tidy timeout metadata.
+# Remove only the unsupported lint scheduling property, preserving test sources
+# and all parser/runtime behavior. Do not suppress test/build failures.
+for source in ['LibVintfTest.cpp', 'vintf_object_tests.cpp']:
+    replace('system/libvintf/test/Android.bp',
+            '    tidy_timeout_srcs: [\n        "' + source + '",\n    ],\n', '')
 
 # libvintf returns a null manifest on missing or rejected vendor XML. Keep the
 # FFI result allocated even when empty: Rust's slice contract requires a nonnull
