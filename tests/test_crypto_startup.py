@@ -25,8 +25,10 @@ class StartupTests(unittest.TestCase):
                 TEST_BOOTED=changes.get('booted',''), TEST_CHECK=str(changes.get('check',0)))
             commands=r'''
 fixture_script=$1
+fixture_path=$PATH
 set -- --library
 . "$fixture_script"
+PATH=$fixture_path
 mount_table="$FIXTURE/mounts"
 runtime="$FIXTURE/runtime"
 vendor_manifest="$FIXTURE/manifest"
