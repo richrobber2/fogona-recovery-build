@@ -46,3 +46,34 @@ touch firmware/module overlay are required before any physical trial; those
 private device inputs are not included in this public repository. Physical
 bootloader START fallback has been tested; stock restoration from Android has
 only been checked read-only. No flashing is performed by the workflow.
+
+Recovery KeyMint startup work
+
+This revision mounts the existing read-only vendor entry immediately before
+metadata decryption and signals recovery init. The recovery keystore service
+is disabled by default and starts only after the default AIDL KeyMint service
+registers. Recovery-only QSEE/KeyMint service declarations use their existing
+vendor executables; the whole vendor init tree is not imported. No Android
+startup files or running Android services are modified by this source work.
+
+The one-shot policy checks recovery/device identity, read-only EROFS vendor,
+and all 14 privately staged matching VNDK v33 libraries before starting HALs.
+Those libraries are kept under system/lib64/fogona-vndk33 and selected only
+for the two vendor processes, preserving recovery/keystore's built libraries.
+They are not public CI inputs. A raw CI image therefore cannot perform this
+startup successfully until the checked private overlay is packaged locally.
+
+The registration probe checks only the public Binder service name and releases
+its reference. Its 2500ms polling budget has an outer three-second process
+limit. Failure stops both attempted vendor services and leaves keystore
+stopped; vold's existing five-second registration wait then returns failure.
+This does not bound later HAL Binder calls or establish TEE compatibility.
+No formatting, key generation/deletion fallback, slot change or reboot is added.
+
+Eight shell policy cases, four actual native-probe cases and three additional
+ramdisk-audit cases cover guards, ordering, timeout cleanup, library/API failure,
+Binder reference lifetime and required startup integration. The staged audit
+requires an ARM64 probe, Binder library and the gated keystore configuration.
+Log snapshots prioritize main/system/crash buffers and retain startup output.
+Full Android compilation, private packaging and hardware decryption remain
+required before this revision can be called working.

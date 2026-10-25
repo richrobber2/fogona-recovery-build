@@ -15,3 +15,13 @@ cc_binary_host {
     shared_libs: ["libvintf"],
     cflags: ["-Wall", "-Wextra", "-Werror"],
 }
+
+cc_binary {
+    name: "fogona-check-keymint",
+    recovery: true,
+    srcs: ["crypto/check-keymint.cpp"],
+    // patch-build.py installs this shared, locally tested polling policy.
+    include_dirs: ["system/vold"],
+    shared_libs: ["libdl"],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+}

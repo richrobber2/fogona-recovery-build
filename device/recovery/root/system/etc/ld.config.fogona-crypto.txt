@@ -1,0 +1,5 @@
+# Scoped to these vendor processes; recovery/keystore retain their built libraries.
+dir.fogona_crypto = /vendor/bin
+[fogona_crypto]
+namespace.default.isolated = false
+namespace.default.search.paths = /vendor/${LIB}:/vendor/${LIB}/hw:/system/${LIB}/fogona-vndk33:/system/${LIB}

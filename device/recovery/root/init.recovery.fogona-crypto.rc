@@ -1,0 +1,30 @@
+# Recovery-only declarations; never import the full vendor Android init tree.
+# Proprietary executables stay on this device's read-only vendor partition.
+service fogona-qseecomd /vendor/bin/qseecomd
+    user root
+    group root drmrpc
+    socket notify-topology stream 660 system drmrpc
+    seclabel u:r:recovery:s0
+    setenv LD_CONFIG_FILE /system/etc/ld.config.fogona-crypto.txt
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64/fogona-vndk33:/system/lib64
+    disabled
+    oneshot
+
+service fogona-keymint /vendor/bin/hw/android.hardware.security.keymint-service-qti
+    user system
+    group system drmrpc
+    seclabel u:r:recovery:s0
+    setenv LD_CONFIG_FILE /system/etc/ld.config.fogona-crypto.txt
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64/fogona-vndk33:/system/lib64
+    disabled
+    oneshot
+
+service fogona-crypto-start /system/bin/sh /system/bin/fogona-crypto-start.sh
+    user root
+    group root log
+    seclabel u:r:recovery:s0
+    disabled
+    oneshot
+
+on property:fogona.crypto.vendor.ready=1
+    start fogona-crypto-start

@@ -43,13 +43,26 @@ required = ['init', 'system/bin/recovery', 'system/bin/sh', 'system/bin/twrp',
             'system/bin/keystore2', 'system/bin/fscryptpolicyget',
             'system/bin/device-rescue.sh', 'system/etc/recovery.fstab',
             'system/etc/task_profiles.json']
-if len(sys.argv) > 3:
-    if sys.argv[3:] != ['--require-logging']:
-        raise SystemExit('Unknown audit options')
+options = sys.argv[3:]
+if len(options) != len(set(options)) or set(options) - {'--require-logging', '--require-crypto-startup'}:
+    raise SystemExit('Unknown or duplicate audit options')
+if '--require-logging' in options:
     required += ['system/bin/logd', 'system/bin/logcat',
                  'system/bin/recovery-logsave.sh', 'init.recovery.logd.rc',
                  'system/etc/event-log-tags']
     critical_elf_paths.update({'system/bin/logd', 'system/bin/logcat'})
+if '--require-crypto-startup' in options:
+    required += ['system/lib64/libbinder_ndk.so', 'system/bin/fogona-check-keymint', 'system/bin/fogona-crypto-start.sh',
+                 'init.recovery.fogona-crypto.rc', 'system/etc/ld.config.fogona-crypto.txt']
+    critical_elf_paths.add('system/bin/fogona-check-keymint')
+    for name, marker in [('init.recovery.qcom.rc', 'import /init.recovery.fogona-crypto.rc'),
+                         ('system/etc/init/keystore2.rc', 'on property:fogona.crypto.keymint.ready=1')]:
+        path = rooted(name)
+        if not path.is_file() or marker not in path.read_text():
+            errors.append('Missing crypto startup integration: ' + name)
+    path = rooted('system/etc/init/keystore2.rc')
+    if path.is_file() and ('on late-init' in path.read_text() or '    disabled' not in path.read_text()):
+        errors.append('Keystore must wait for the KeyMint-ready trigger')
 for name in required:
     path = rooted(name)
     if not path.is_file() or path.stat().st_size == 0:

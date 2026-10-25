@@ -44,3 +44,11 @@ PRODUCT_COPY_FILES += \
 # Bounded metadata log snapshots; independent of encrypted shared storage.
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/recovery/root/system/bin/recovery-logsave.sh:recovery/root/system/bin/recovery-logsave.sh
+
+# Recovery-only registration probe and startup policy. Matching proprietary
+# VNDK files are overlaid privately on-device, never published by this build.
+PRODUCT_PACKAGES += fogona-check-keymint
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/recovery/root/init.recovery.fogona-crypto.rc:recovery/root/init.recovery.fogona-crypto.rc \
+    $(LOCAL_PATH)/recovery/root/system/etc/ld.config.fogona-crypto.txt:recovery/root/system/etc/ld.config.fogona-crypto.txt \
+    $(LOCAL_PATH)/recovery/root/system/bin/fogona-crypto-start.sh:recovery/root/system/bin/fogona-crypto-start.sh

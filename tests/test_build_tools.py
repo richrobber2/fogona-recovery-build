@@ -39,8 +39,8 @@ class RamdiskAuditTests(unittest.TestCase):
                 p.write_text('#!/system/bin/sh\n')
                 p.chmod(0o755)
 
-    def audit(self, logging=False):
-        return subprocess.run([sys.executable,str(BASE/'verify-ramdisk.py'),str(self.root),str(self.output)]+(['--require-logging'] if logging else []), capture_output=True,text=True)
+    def audit(self, logging=False, crypto=False):
+        return subprocess.run([sys.executable,str(BASE/'verify-ramdisk.py'),str(self.root),str(self.output)]+(['--require-logging'] if logging else [])+(['--require-crypto-startup'] if crypto else []), capture_output=True,text=True)
 
     def test_valid_arm64_fixture(self):
         p=self.audit()
@@ -61,6 +61,38 @@ class RamdiskAuditTests(unittest.TestCase):
         (self.root/'system/etc/event-log-tags').write_text('1 fixture_tag\n')
         p=self.audit(logging=True)
         self.assertEqual(p.returncode,0,p.stderr)
+
+    def stage_crypto(self):
+        library=self.root/'system/lib64/libbinder_ndk.so'; library.parent.mkdir(parents=True,exist_ok=True)
+        shutil.copy2(self.build/'fixture',library)
+        shutil.copy2(self.build/'fixture',self.root/'system/bin/fogona-check-keymint')
+        helper=self.root/'system/bin/fogona-crypto-start.sh'
+        helper.write_text('#!/system/bin/sh\n'); helper.chmod(0o755)
+        (self.root/'init.recovery.fogona-crypto.rc').write_text('on init\n')
+        (self.root/'init.recovery.qcom.rc').write_text('import /init.recovery.fogona-crypto.rc\n')
+        (self.root/'system/etc/ld.config.fogona-crypto.txt').write_text('[fogona_crypto]\n')
+        path=self.root/'system/etc/init/keystore2.rc';path.parent.mkdir(exist_ok=True)
+        path.write_text('on property:fogona.crypto.keymint.ready=1\n    start keystore2\nservice keystore2 /system/bin/keystore2 /tmp/misc/keystore\n    disabled\n')
+
+    def test_crypto_startup_audit_accepts_complete_fixture(self):
+        self.stage_crypto()
+        result=self.audit(crypto=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_crypto_startup_audit_rejects_early_keystore(self):
+        self.stage_crypto()
+        with (self.root/'system/etc/init/keystore2.rc').open('a') as stream:
+            stream.write('on late-init\n    start keystore2\n')
+        result=self.audit(crypto=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('Keystore must wait',result.stderr)
+
+    def test_crypto_startup_audit_rejects_nonelf_probe(self):
+        self.stage_crypto()
+        (self.root/'system/bin/fogona-check-keymint').write_text('#!/system/bin/sh\n')
+        result=self.audit(crypto=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('Critical program is not ELF',result.stderr)
 
     def test_absolute_android_symlink(self):
         (self.root/'init').unlink()

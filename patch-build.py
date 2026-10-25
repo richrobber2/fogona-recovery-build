@@ -7,6 +7,8 @@ import sys
 
 root = Path(sys.argv[1])
 expected = {
+    'bootable/recovery/partitionmanager.cpp': '755538163751ee7e0c5a614e6016de0bf456a2f8f4f011c4089cf20f14e250d9',
+    'bootable/recovery/etc/init/keystore2.rc': 'a38e9b097522d362ed00eb41413415cab1d1714f4f82948e54a58f2cdba28036',
     'system/libvintf/test/Android.bp': '35f754eacadcca3f29fe05d40986f252ed1c1babc40dc70da73dd1192ad27517',
     'system/security/keystore2/src/vintf/vintf.cpp': '0a309133335bce63a0e5fbd0f240ae700e530efb24aac60bc763efde756c9520',
     'system/vold/Keymaster.cpp': '0dd4d451a3ba35daf73beb59605b49afb9d78beb4fdd5c046d531aee3adbf3c7',
@@ -29,6 +31,26 @@ def replace(name, old, new, count=1):
         raise SystemExit(f'Expected {count} occurrences in {name}: {old!r}')
     contents[name] = text.replace(old, new)
     changes.append({'file': name, 'old': old, 'new': new})
+
+# TWRP otherwise unmounts vendor after fstab/APEX processing and enters metadata
+# decryption without starting this device's AIDL HAL. Mount the existing RO
+# fstab entry before signalling recovery-only init; abort the attempt on failure.
+replace('bootable/recovery/partitionmanager.cpp',
+        '\t\tSet_Crypto_State();\n\t\tTWPartition* Key_Directory_Partition',
+        '\t\tif (!Mount_By_Path("/vendor", true)) {\n'
+        '\t\t\tLOGERR("Vendor unavailable; skipping metadata decryption\\n");\n'
+        '\t\t\treturn;\n'
+        '\t\t}\n'
+        '\t\tif (!android::base::SetProperty("fogona.crypto.vendor.ready", "1")) {\n'
+        '\t\t\tLOGERR("Cannot signal crypto startup; skipping metadata decryption\\n");\n'
+        '\t\t\treturn;\n'
+        '\t\t}\n'
+        '\t\tSet_Crypto_State();\n\t\tTWPartition* Key_Directory_Partition')
+replace('bootable/recovery/etc/init/keystore2.rc',
+        'on late-init\n    start keystore2\n',
+        'on property:fogona.crypto.keymint.ready=1\n    start keystore2\n')
+replace('bootable/recovery/etc/init/keystore2.rc',
+        '    class early_hal\n', '    class early_hal\n    disabled\n')
 
 # Android 12 Soong predates this Android 13 clang-tidy timeout metadata.
 # Remove only the unsupported lint scheduling property, preserving test sources

@@ -88,9 +88,12 @@ snapshot() {
         save_checked "$scratch/device-recovery-services.txt" "$out/services.txt" 65536 || return 1
     fi
     if command -v logcat >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
-        if timeout 3 logcat -b all -d -t 500 > "$scratch/device-recovery-logcat.txt" 2>/dev/null; then
+        if timeout 3 logcat -b main -b system -b crash -d -t 1000 > "$scratch/device-recovery-logcat.txt" 2>/dev/null; then
             save_checked "$scratch/device-recovery-logcat.txt" "$out/logcat.txt" 524288 || return 1
         fi
+    fi
+    if [ -f /tmp/fogona-crypto-startup.log ]; then
+        save_checked /tmp/fogona-crypto-startup.log "$out/crypto-startup.txt" 65536 || return 1
     fi
     stage=complete
     first_snapshot=0
@@ -104,7 +107,7 @@ case "${1:-}" in --once|--boot) action=$1;; *) echo 'Use --once or --boot' >&2; 
 [ "$(id -u)" = 0 ] && [ "$(getprop ro.product.vendor.device)" = fogona ] || exit 2
 [ "$(getprop sys.boot_completed)" != 1 ] || { echo 'Recovery only' >&2; exit 2; }
 ensure_metadata || exit 2
-for name in recovery.log previous-recovery.log modules.txt input-devices.txt dmesg.txt boot-dmesg.txt mounts.txt logcat.txt properties.txt processes.txt services.txt status.txt; do
+for name in recovery.log previous-recovery.log modules.txt input-devices.txt dmesg.txt boot-dmesg.txt mounts.txt logcat.txt properties.txt processes.txt services.txt crypto-startup.txt status.txt; do
     [ ! -L "$out/$name" ] && [ ! -L "$out/$name.new" ] || exit 2
 done
 if [ -f "$out/recovery.log" ]; then
