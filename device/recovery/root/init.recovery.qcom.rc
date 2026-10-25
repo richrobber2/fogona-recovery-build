@@ -99,3 +99,14 @@ on property:sys.usb.config=fastboot && property:sys.usb.ffs.ready=1 && property:
 on fs
     wait /dev/block/platform/soc/${ro.boot.bootdevice}
     symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
+
+# Save boot/service diagnostics without relying on shared storage.
+service recovery-logsave /system/bin/sh /system/bin/recovery-logsave.sh --boot
+    user root
+    group root log
+    seclabel u:r:recovery:s0
+    disabled
+    oneshot
+
+on property:init.svc.recovery=running
+    start recovery-logsave

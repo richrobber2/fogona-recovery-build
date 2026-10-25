@@ -27,6 +27,8 @@ jobs:
         run: |
           python3 tests/test_required_scope.py
           python3 tests/test_link_scope.py
+          g++ -std=c++17 -Wall -Wextra -Werror tests/keystore_wait_test.cpp -o "$RUNNER_TEMP/keystore-wait-test"
+          "$RUNNER_TEMP/keystore-wait-test"
       - name: Sync minimal TWRP source
         shell: bash
         run: |
@@ -74,7 +76,7 @@ jobs:
           } 2>&1 | tee ../build.log
           tar -czf ../recovery-staging.tar.gz -C out/target/product/fogona recovery/root system/lib64
           cmp ../device/recovery/root/system/bin/device-rescue.sh out/target/product/fogona/recovery/root/system/bin/device-rescue.sh
-          python3 ../verify-ramdisk.py out/target/product/fogona/recovery/root ../ramdisk-audit.json
+          python3 ../verify-ramdisk.py out/target/product/fogona/recovery/root ../ramdisk-audit.json --require-logging
           test -s out/target/product/fogona/recovery.img
           test "$(stat -c%s out/target/product/fogona/recovery.img)" -le 104857600
           sha256sum out/target/product/fogona/recovery.img > ../recovery.sha256

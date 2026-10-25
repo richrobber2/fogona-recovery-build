@@ -38,3 +38,7 @@ PRODUCT_COPY_FILES += \
 # The branch defines normal task_profiles.json, not task_recovery_profiles.json.
 PRODUCT_COPY_FILES += \
     system/core/libprocessgroup/profiles/task_profiles.json:recovery/root/system/etc/task_profiles.json
+
+# Bounded metadata log snapshots; independent of encrypted shared storage.
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/recovery/root/system/bin/recovery-logsave.sh:recovery/root/system/bin/recovery-logsave.sh

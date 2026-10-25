@@ -43,6 +43,12 @@ required = ['init', 'system/bin/recovery', 'system/bin/sh', 'system/bin/twrp',
             'system/bin/keystore2', 'system/bin/fscryptpolicyget',
             'system/bin/device-rescue.sh', 'system/etc/recovery.fstab',
             'system/etc/task_profiles.json']
+if len(sys.argv) > 3:
+    if sys.argv[3:] != ['--require-logging']:
+        raise SystemExit('Unknown audit options')
+    required += ['system/bin/logd', 'system/bin/logcat',
+                 'system/bin/recovery-logsave.sh', 'init.recovery.logd.rc']
+    critical_elf_paths.update({'system/bin/logd', 'system/bin/logcat'})
 for name in required:
     path = rooted(name)
     if not path.is_file() or path.stat().st_size == 0:

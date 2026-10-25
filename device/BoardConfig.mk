@@ -126,3 +126,7 @@ TW_DEFAULT_BRIGHTNESS := 256
 TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/libsysutils.so \
     $(TARGET_OUT_SHARED_LIBRARIES)/libresetprop.so
+
+# Capture crypto and init errors using tools built with this recovery.
+TWRP_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true

@@ -7,6 +7,7 @@ import sys
 
 root = Path(sys.argv[1])
 expected = {
+    'system/vold/Keymaster.cpp': '0dd4d451a3ba35daf73beb59605b49afb9d78beb4fdd5c046d531aee3adbf3c7',
     'system/tools/hidl/build/hidl_interface.go': '1cd012ba9e55c17fca85bda47d07dfb717acb9148c0dc6d842713614e4dd04b2',
     'build/make/core/main.mk': '971b6dc659ea8f78212017223d0531e2520e74894d947f028c683277e83a52ce',
     'bootable/recovery/Android.mk': '1d6f16957effa23e9323c2a40dd52ee7c809d571302becea774d1a89044e6f31',
@@ -26,6 +27,30 @@ def replace(name, old, new, count=1):
         raise SystemExit(f'Expected {count} occurrences in {name}: {old!r}')
     contents[name] = text.replace(old, new)
     changes.append({'file': name, 'old': old, 'new': new})
+
+# Recovery has an explicitly started keystore2. Do not let an absent/crashed
+# service leave startup waiting forever. This does not bound later Binder calls.
+replace('system/vold/Keymaster.cpp', '#include "Keymaster.h"\n',
+        '#include "Keymaster.h"\n#include "FogonaKeystoreWait.h"\n#include <thread>\n')
+replace('system/vold/Keymaster.cpp',
+        '    ::ndk::SpAIBinder binder(AServiceManager_waitForService(keystore2_service_name));\n',
+        '''    auto binder = fogona::WaitForKeystore(
+            [] { return ::ndk::SpAIBinder(AServiceManager_checkService(keystore2_service_name)); },
+            [] { return std::chrono::steady_clock::now(); },
+            [](std::chrono::steady_clock::duration delay) { std::this_thread::sleep_for(delay); },
+            std::chrono::milliseconds(5000), std::chrono::milliseconds(100));
+    if (binder.get() == nullptr) {
+        LOG(ERROR) << "Recovery keystore2 unavailable after 5 seconds; metadata decrypt aborted";
+        return;
+    }
+''')
+helper = Path(__file__).parent / 'tools/keystore-service-wait.h'
+helper_target = root / 'system/vold/FogonaKeystoreWait.h'
+if helper_target.exists():
+    raise SystemExit('Unexpected existing FogonaKeystoreWait.h')
+changes.append({'file': 'system/vold/FogonaKeystoreWait.h',
+                'source': 'tools/keystore-service-wait.h',
+                'sha256': hashlib.sha256(helper.read_bytes()).hexdigest()})
 
 # HIDL generates VTS fuzzers even when their test framework is pruned. Do not
 # emit test-only driver/profiler/fuzzer modules for this explicit recovery job.
@@ -52,6 +77,12 @@ for module in ['keystore', 'keystore_auth', 'keystore_cli']:
     replace(pre, line, '', 2 if module == 'keystore' else 1)
 for module in ['libbinderthreadstate', 'libminadbd', 'libcryptfsfde', 'libtwrpfscrypt', 'libsoftkeymaster', 'libstatslog']:
     replace(pre, 'RECOVERY_LIBRARY_SOURCE_FILES += $(TARGET_' + ('RECOVERY_ROOT_OUT)/system/lib64/' if module == 'libbinderthreadstate' else 'OUT_SHARED_LIBRARIES)/') + module + '.so\n', '')
+# Pinned Android12 logcat uses libbase/libprocessgroup and a static liblog.
+# Older TWRP relink lists reference removed or unused logging libraries.
+for module in ['libnl', 'libpcrecpp', 'liblogcat']:
+    replace(pre, 'RECOVERY_LIBRARY_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/' + module + '.so\n', '')
+replace(mk, '        TWRP_REQUIRED_MODULES += logd libsysutils libnl init.recovery.logd.rc',
+        '        TWRP_REQUIRED_MODULES += logd libsysutils init.recovery.logd.rc')
 replace(pre, '    plat_hardware_contexts \\\n', '')  # typo; real hwservice contexts remain
 # Relink file basenames must be mapped to the actual module names.
 replace(pre, 'LOCAL_REQUIRED_MODULES += $(TARGET_BINARY_RELINK_FILES)', '''TARGET_BINARY_RELINK_MODULES := $(filter-out twrp ueventd unzip,$(TARGET_BINARY_RELINK_FILES))
@@ -120,6 +151,7 @@ compat_missing = r"""  define link-type-missing
   endef"""
 replace('build/make/core/main.mk', '  define link-type-missing\n    $(eval $$(1).MISSING := true)\n  endef', compat_missing)
 replace('build/make/core/main.mk', '$(foreach lt,$(ALL_LINK_TYPES),\\\n', compat_links + '\n$(foreach lt,$(ALL_LINK_TYPES),\\\n')
+helper_target.write_bytes(helper.read_bytes())
 for name, text in contents.items():
     (root / name).write_text(text)
 Path('compatibility-repairs.json').write_text(json.dumps({'changes': changes, 'validation_scope': 'Recursive REQUIRED closure from recovery-installed modules and explicit ramdisk/relink roots; Ninja errors for missing reachable linked modules; staged ELF/content audit.'}, indent=2) + '\n')

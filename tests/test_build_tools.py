@@ -39,13 +39,27 @@ class RamdiskAuditTests(unittest.TestCase):
                 p.write_text('#!/system/bin/sh\n')
                 p.chmod(0o755)
 
-    def audit(self):
-        return subprocess.run([sys.executable,str(BASE/'verify-ramdisk.py'),str(self.root),str(self.output)], capture_output=True,text=True)
+    def audit(self, logging=False):
+        return subprocess.run([sys.executable,str(BASE/'verify-ramdisk.py'),str(self.root),str(self.output)]+(['--require-logging'] if logging else []), capture_output=True,text=True)
 
     def test_valid_arm64_fixture(self):
         p=self.audit()
         self.assertEqual(p.returncode,0,p.stderr)
         self.assertEqual(json.loads(self.output.read_text())['errors'],[])
+
+    def test_logging_option_requires_tools(self):
+        p=self.audit(logging=True)
+        self.assertNotEqual(p.returncode,0)
+        self.assertIn('system/bin/logd',p.stderr)
+
+    def test_logging_tools_audited(self):
+        for name in ['logd','logcat']:
+            shutil.copy2(self.build/'fixture',self.root/'system/bin'/name)
+        script=self.root/'system/bin/recovery-logsave.sh'
+        script.write_text('#!/system/bin/sh\n'); script.chmod(0o755)
+        (self.root/'init.recovery.logd.rc').write_text('on init\n    start logd\n')
+        p=self.audit(logging=True)
+        self.assertEqual(p.returncode,0,p.stderr)
 
     def test_absolute_android_symlink(self):
         (self.root/'init').unlink()

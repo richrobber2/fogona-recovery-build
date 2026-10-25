@@ -1,11 +1,9 @@
-/system         ext4     system                                     flags=display=system;logical;slotselect
-/system_ext     erofs     system_ext                                 flags=display=system_ext;logical;slotselect
-/vendor         erofs     vendor                                     flags=display=vendor;logical;slotselect
-/odm            ext4     odm                                        flags=display=odm;logical;slotselect
-/product        ext4     product                                    flags=display=product;logical;slotselect
+/system         ext4     system                                     flags=display=system;logical;slotselect;fsflags=ro;mounttodecrypt
+/system_ext     erofs     system_ext                                 flags=display=system_ext;logical;slotselect;fsflags=ro
+/vendor         erofs     vendor                                     flags=display=vendor;logical;slotselect;fsflags=ro;mounttodecrypt
 /data           f2fs     /dev/block/by-name/userdata     flags=display=data;fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized+wrappedkey_v0;metadata_encryption=aes-256-xts:wrappedkey_v0;keydirectory=/metadata/vold/metadata_encryption
 /metadata       f2fs     /dev/block/by-name/metadata     flags=display=metadata
-/sdcard         vfat     /dev/block/mmcblk1p1                       flags=display=sdcard
+/external_sd    vfat    /dev/block/mmcblk1p1    flags=display=MicroSD;storage;removable
 /boot           emmc     /dev/block/by-name/boot         flags=display=boot;slotselect
 /misc           emmc     /dev/block/bootdevice/by-name/misc         flags=display=misc
 
@@ -14,5 +12,5 @@
 /init_boot      emmc     /dev/block/by-name/init_boot    flags=display=init_boot;slotselect
 
 # Verified EROFS logical module partitions on the active device.
-/vendor_dlkm    erofs    vendor_dlkm   flags=display=vendor_dlkm;logical;slotselect;backup=1;flashimg=1
-/system_dlkm    erofs    system_dlkm   flags=display=system_dlkm;logical;slotselect;backup=1;flashimg=1
+/vendor_dlkm    erofs    vendor_dlkm   flags=display=vendor_dlkm;logical;slotselect;backup=1;flashimg=1;fsflags=ro
+/system_dlkm    erofs    system_dlkm   flags=display=system_dlkm;logical;slotselect;backup=1;flashimg=1;fsflags=ro
